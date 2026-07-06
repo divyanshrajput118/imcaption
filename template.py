@@ -24,6 +24,7 @@ list_of_files = [
     "dvc.yaml",
     "params.yaml",
     "requirements.txt",
+    "requirements_colab.txt",
     "setup.py",
     "research/trials.ipynb",
     "templates/index.html",

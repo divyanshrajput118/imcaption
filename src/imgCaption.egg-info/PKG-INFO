@@ -1,0 +1,16 @@
+Metadata-Version: 2.4
+Name: imgCaption
+Version: 0.0.0
+Summary: A small python package
+Home-page: https://github.com/divyanshrajput118/imcaption
+Author: divyanshrajput118
+Author-email: raghavzz158@gmail.com
+Project-URL: Bug Tracker, https://github.com/divyanshrajput118/imcaption/issues
+Dynamic: author
+Dynamic: author-email
+Dynamic: description
+Dynamic: home-page
+Dynamic: project-url
+Dynamic: summary
+
+# imcaption
