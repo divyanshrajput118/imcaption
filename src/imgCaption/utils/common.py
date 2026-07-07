@@ -4,6 +4,9 @@ import yaml
 from imgCaption import logger
 import json
 import joblib
+import unittest
+if not hasattr(unittest.TestCase, "assertRaisesRegexp"):
+    unittest.TestCase.assertRaisesRegexp = unittest.TestCase.assertRaisesRegex
 from ensure import ensure_annotations
 from box import ConfigBox
 from pathlib import Path
