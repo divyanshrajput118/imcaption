@@ -50,8 +50,10 @@ class DataTransformation:
         with open(PARAMS_FILE_PATH, "w") as file:
             yaml.safe_dump(existing_params.to_dict(), file, sort_keys=False)
         logger.info("Params updated Sucessfully")
+        vocabulary = vectorizer.get_vocabulary()
         vectorizer_data = {"config": vectorizer.get_config(),
-                            "weights": vectorizer.get_weights()}
+                            "weights": vectorizer.get_weights(),
+                            "vocabulary": vocabulary}
         save_pkl_file(vectorizer_data, self.config.vectorizer_path)
         logger.info("Vectorizer Saved Sucessfully")
 

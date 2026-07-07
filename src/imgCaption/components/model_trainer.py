@@ -22,10 +22,24 @@ class ModelTrainer:
         self.load_main_model()
 
     def load_vectorizer(self):
-        from_disk=load_pkl_file(self.config.vectorizer_path)
+        from_disk = load_pkl_file(self.config.vectorizer_path)
         self.vectorizer = TextVectorization.from_config(from_disk["config"])
-        self.vectorizer.adapt(tf.data.Dataset.from_tensor_slices(["dummy"]))
-        self.vectorizer.set_weights(from_disk["weights"])
+
+        if "vocabulary" in from_disk and len(from_disk["vocabulary"]) > 2:
+            # Keras 3 compatible: vocabulary saved explicitly
+            vocab = [w for w in from_disk["vocabulary"] if w not in ('', '[UNK]')]
+            self.vectorizer.set_vocabulary(vocab)
+            logger.info(f"Vectorizer loaded via vocabulary list. Size: {len(self.vectorizer.get_vocabulary())}")
+        elif from_disk.get("weights"):
+            # Keras 2 fallback: vocabulary stored in weights
+            self.vectorizer.adapt(tf.data.Dataset.from_tensor_slices(["dummy"]))
+            self.vectorizer.set_weights(from_disk["weights"])
+            logger.info(f"Vectorizer loaded via set_weights. Size: {len(self.vectorizer.get_vocabulary())}")
+        else:
+            raise ValueError(
+                "Could not restore vectorizer vocabulary. "
+                "Re-run Stage 2 (data_transformation) to regenerate the vectorizer_data.pkl with vocabulary saved."
+            )
 
     def load_feature_extractor(self):
         self.feature_extractor = load_model(self.config.image_feex_path)
@@ -37,19 +51,30 @@ class ModelTrainer:
     def save_model(path: Path, model: tf.keras.Model):
         model.save(path)
         
-    def split_dict_by_keys(self,image_ids):
-        train,val=train_test_split(image_ids,test_size=self.config.SPLIT_SIZE,random_state=self.config.RANDOM_STATE)
+    def split_dict_by_keys(self, image_ids):
+        train, val = train_test_split(image_ids, test_size=self.config.SPLIT_SIZE, random_state=self.config.RANDOM_STATE)
         logger.info(f"Length of train_images is : {len(train)}")
         logger.info(f"Length of val_images is : {len(val)}")
-        return train,val
-        
-    def features_ext_dict(self,image_caption_map):
-        d={}
-        images=list(image_caption_map.keys())
+        return train, val
+
+    def pretokenize_captions(self, image_caption_map):
+        """Pre-tokenize all captions on CPU before training.
+        Avoids calling the vectorizer inside the GPU-side tf.data generator (Keras 3 bug).
+        """
+        tokenized = {}
+        for image, captions in tqdm(image_caption_map.items(), desc="Pre-tokenizing captions"):
+            tokenized[image] = [
+                self.vectorizer([cap]).numpy()[0] for cap in captions
+            ]
+        return tokenized
+
+    def features_ext_dict(self, image_caption_map):
+        d = {}
+        images = list(image_caption_map.keys())
         batch_size = 32
 
         for start in tqdm(range(0, len(images), batch_size), desc="Extracting features", unit="batch"):
-            batch_names = images[start : start + batch_size]
+            batch_names = images[start: start + batch_size]
             batch_imgs = []
             for img_name in batch_names:
                 img_path = os.path.join(self.config.images_dir, img_name)
@@ -65,30 +90,29 @@ class ModelTrainer:
         logger.info(f"Feature extraction complete: {len(d)} images processed")
         return d
     
-    def data_generator(self,image_caption_map,features_map):
+    def data_generator(self, image_caption_map, features_map, tokenized_captions):
+        """Generator using pre-tokenized captions — no vectorizer call inside."""
         while True:
-            X1,X2,Y = list(),list(),list()
-            cnt=0
-            for image,captions in image_caption_map.items():
-                for cap in captions:
-                    cap=self.vectorizer([cap]).numpy()[0]
-                    for j in range(1,len(cap)):
-                        cur_seq=np.array([cap[:j]])
-                        cur_seq = pad_sequences(cur_seq, maxlen=self.config.MAX_LENGTH, padding='post')[0]
-                        next_word=cap[j]
+            X1, X2, Y = list(), list(), list()
+            cnt = 0
+            for image in image_caption_map:
+                for cap_ids in tokenized_captions[image]:
+                    for j in range(1, len(cap_ids)):
+                        cur_seq = pad_sequences([cap_ids[:j]], maxlen=self.config.MAX_LENGTH, padding='post')[0]
+                        next_word = cap_ids[j]
                         X1.append(features_map[image])
                         X2.append(cur_seq)
                         Y.append(next_word)
-                cnt+=1
-                if cnt==self.config.BATCH_SIZE:
+                cnt += 1
+                if cnt == self.config.BATCH_SIZE:
                     yield (np.array(X1), np.array(X2)), np.array(Y)
-                    X1,X2,Y = list(),list(),list()
-                    cnt=0   
+                    X1, X2, Y = list(), list(), list()
+                    cnt = 0
             if len(X1) > 0:
                 yield (np.array(X1), np.array(X2)), np.array(Y)
 
     def train(self):
-        train_images_caption=load_pkl_file(self.config.train_images_captions_path)
+        train_images_caption = load_pkl_file(self.config.train_images_captions_path)
         image_ids = list(train_images_caption.keys())
         train_keys, val_keys = self.split_dict_by_keys(image_ids)
 
@@ -99,9 +123,13 @@ class ModelTrainer:
         train_feat_map = {k: train_features_map[k] for k in train_keys}
         val_feat_map   = {k: train_features_map[k] for k in val_keys}
 
-        train_generator = self.data_generator(train_img_cap_map, train_feat_map)
-        val_generator = self.data_generator(val_img_cap_map, val_feat_map)
+        # Pre-tokenize ALL captions on CPU before training
+        logger.info("Pre-tokenizing captions on CPU...")
+        train_tokenized = self.pretokenize_captions(train_img_cap_map)
+        val_tokenized   = self.pretokenize_captions(val_img_cap_map)
 
+        train_generator = self.data_generator(train_img_cap_map, train_feat_map, train_tokenized)
+        val_generator   = self.data_generator(val_img_cap_map,   val_feat_map,   val_tokenized)
 
         self.main_model.compile(
             optimizer="adam",
@@ -109,8 +137,8 @@ class ModelTrainer:
             metrics=["accuracy"]
         )
         logger.info("Model Training Started")
-        steps_per_epoch = len(train_img_cap_map) // self.config.BATCH_SIZE
-        validation_steps = len(val_img_cap_map) // self.config.BATCH_SIZE
+        steps_per_epoch  = len(train_img_cap_map) // self.config.BATCH_SIZE
+        validation_steps = len(val_img_cap_map)   // self.config.BATCH_SIZE
         self.main_model.fit(
             train_generator,
             validation_data=val_generator,
@@ -119,6 +147,6 @@ class ModelTrainer:
             validation_steps=validation_steps
         )  
         self.save_model(
-        path=self.config.trained_model_path,
-        model=self.main_model
-        ) 
+            path=self.config.trained_model_path,
+            model=self.main_model
+        )
