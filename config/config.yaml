@@ -16,11 +16,11 @@ data_transformation:
 
 prepare_base_model:
   root_dir: artifacts/prepare_base_model
-  image_feex_path: artifacts/prepare_base_model/feature_extractor.h5
-  main_model_path: artifacts/prepare_base_model/main_model.h5
+  image_feex_path: artifacts/prepare_base_model/feature_extractor.keras
+  main_model_path: artifacts/prepare_base_model/main_model.keras
 
 model_trainer:
   root_dir: artifacts/training
   images_dir: artifacts/data_ingestion/Images
-  trained_model_path: artifacts/training/model.h5
+  trained_model_path: artifacts/training/model.keras
 
