@@ -81,11 +81,11 @@ class ModelTrainer:
                         Y.append(next_word)
                 cnt+=1
                 if cnt==self.config.BATCH_SIZE:
-                    yield [np.array(X1),np.array(X2)],np.array(Y)
+                    yield (np.array(X1), np.array(X2)), np.array(Y)
                     X1,X2,Y = list(),list(),list()
                     cnt=0   
             if len(X1) > 0:
-                yield [np.array(X1), np.array(X2)], np.array(Y)
+                yield (np.array(X1), np.array(X2)), np.array(Y)
 
     def train(self):
         train_images_caption=load_pkl_file(self.config.train_images_captions_path)
