@@ -1,0 +1,26 @@
+artifacts_root: artifacts
+
+
+data_ingestion:
+  root_dir: artifacts/data_ingestion
+  source_URL: https://drive.google.com/file/d/1X-l4QnuhIYMXm-Lgl2N0MO-xR75ly3OD/view?usp=sharing
+  local_data_file: artifacts/data_ingestion/data.zip
+  unzip_dir: artifacts/data_ingestion
+
+data_transformation:
+  root_dir: artifacts/data_transformation
+  captions_file: artifacts/data_ingestion/captions.txt
+  vectorizer_path: artifacts/data_transformation/vectorizer_data.pkl
+  train_images_captions_path: artifacts/data_transformation/train_images_captions.pkl
+  test_images_captions_path: artifacts/data_transformation/test_images_captions.pkl
+
+prepare_base_model:
+  root_dir: artifacts/prepare_base_model
+  image_feex_path: artifacts/prepare_base_model/feature_extractor.h5
+  main_model_path: artifacts/prepare_base_model/main_model.h5
+
+model_trainer:
+  root_dir: artifacts/training
+  images_dir: artifacts/data_ingestion/Images
+  trained_model_path: artifacts/training/model.h5
+

@@ -12,3 +12,4 @@ src/imgCaption/constants/__init__.py
 src/imgCaption/entity/__init__.py
 src/imgCaption/pipeline/__init__.py
 src/imgCaption/utils/__init__.py
+src/imgCaption/utils/common.py
