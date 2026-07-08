@@ -23,4 +23,9 @@ model_trainer:
   root_dir: artifacts/training
   images_dir: artifacts/data_ingestion/Images
   trained_model_path: artifacts/training/model.keras
+  best_model_path: artifacts/training/best_model.keras
 
+
+model_evaluation:
+  root_dir: artifacts/model_evaluation
+  scores_path: artifacts/model_evaluation/scores.json

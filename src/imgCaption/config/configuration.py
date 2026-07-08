@@ -4,6 +4,7 @@ from imgCaption.entity.config_entity import DataIngestionConfig
 from imgCaption.entity.config_entity import DataTransformationConfig
 from imgCaption.entity.config_entity import PrepareBaseModelConfig
 from imgCaption.entity.config_entity import ModelTrainerConfig
+from imgCaption.entity.config_entity import ModelEvaluationConfig
 
 class ConfigurationManager:
     def __init__(
@@ -89,6 +90,10 @@ class ConfigurationManager:
                                             images_dir=Path(training.images_dir),
                                             trained_model_path=Path(training.trained_model_path),
                                             train_images_captions_path=Path(data_transformation.train_images_captions_path),
+                                            best_model_path=Path(training.best_model_path),
+
+                                            EPOCHS=params.EPOCHS,
+                                            PATIENCE=params.PATIENCE,
                                             SPLIT_SIZE=params.SPLIT_SIZE,
                                             RANDOM_STATE=params.RANDOM_STATE,
                                             MAX_LENGTH=params.MAX_LENGTH,
@@ -96,3 +101,25 @@ class ConfigurationManager:
                                         )
 
         return prepare_model_trainer_config
+
+    def get_evaluation_config(self) -> ModelEvaluationConfig:
+        eval_cfg = self.config.model_evaluation
+        training = self.config.model_trainer
+        data_transformation = self.config.data_transformation
+        prepare_base_model = self.config.prepare_base_model
+
+        create_directories([eval_cfg.root_dir])
+
+        evaluation_config = ModelEvaluationConfig(
+                                                    root_dir=Path(eval_cfg.root_dir),
+                                                    vectorizer_path=Path(data_transformation.vectorizer_path),
+                                                    images_dir=Path(training.images_dir),
+                                                    test_images_captions_path=Path(data_transformation.test_images_captions_path),
+                                                    image_feex_path=Path(prepare_base_model.image_feex_path),
+                                                    trained_model_path=Path(training.trained_model_path),
+                                                    scores_path=Path(eval_cfg.scores_path),
+                                                    MAX_LENGTH=self.params.MAX_LENGTH,
+                                                    BEAM_WIDTH=self.params.BEAM_WIDTH,
+                                                )
+
+        return evaluation_config

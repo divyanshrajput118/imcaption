@@ -46,8 +46,25 @@ class ModelTrainerConfig:
     images_dir: Path
     trained_model_path: Path
     train_images_captions_path: Path
-
+    best_model_path: Path
+    
+    EPOCHS: int
+    PATIENCE: int
     SPLIT_SIZE: int
     RANDOM_STATE: int         
     MAX_LENGTH: int
-    BATCH_SIZE: int   
+    BATCH_SIZE: int      
+
+
+@dataclass(frozen=True)
+class ModelEvaluationConfig:
+    root_dir: Path
+    vectorizer_path: Path
+    images_dir: Path
+    test_images_captions_path: Path
+    image_feex_path: Path
+    trained_model_path: Path
+    scores_path: Path
+
+    MAX_LENGTH: int
+    BEAM_WIDTH: int
