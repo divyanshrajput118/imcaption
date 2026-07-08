@@ -87,6 +87,26 @@ class ModelTrainer:
         logger.info(f"Feature extraction complete: {len(d)} images processed")
         return d
     
+    def data_generator(self, image_caption_map, features_map, tokenized_captions):
+        while True:
+            X1, X2, Y = list(), list(), list()
+            cnt = 0
+            for image in image_caption_map:
+                for cap_ids in tokenized_captions[image]:
+                    for j in range(1, len(cap_ids)):
+                        cur_seq = pad_sequences([cap_ids[:j]], maxlen=self.config.MAX_LENGTH, padding='post')[0]
+                        next_word = cap_ids[j]
+                        X1.append(features_map[image])
+                        X2.append(cur_seq)
+                        Y.append(next_word)
+                cnt += 1
+                if cnt == self.config.BATCH_SIZE:
+                    yield (np.array(X1), np.array(X2)), np.array(Y)
+                    X1, X2, Y = list(), list(), list()
+                    cnt = 0
+            if len(X1) > 0:
+                yield (np.array(X1), np.array(X2)), np.array(Y)
+    
     def count_token_pairs(self, image_caption_map, tokenized_captions):
         total = 0
         for image in image_caption_map:
