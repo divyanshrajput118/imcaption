@@ -135,7 +135,11 @@ class ModelTrainer:
 
         self.main_model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3, clipnorm=1.0),
-            loss="sparse_categorical_crossentropy",
+            loss=tf.keras.losses.SparseCategoricalCrossentropy(
+                from_logits=False,
+                ignore_class=0,         
+                reduction="sum_over_batch_size",
+            ),
             metrics=["accuracy"]
         )
 
