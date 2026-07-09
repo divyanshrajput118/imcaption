@@ -91,7 +91,7 @@ class ConfigurationManager:
                                             trained_model_path=Path(training.trained_model_path),
                                             train_images_captions_path=Path(data_transformation.train_images_captions_path),
                                             best_model_path=Path(training.best_model_path),
-
+                                            LEARNING_RATE=params.LEARNING_RATE,
                                             EPOCHS=params.EPOCHS,
                                             PATIENCE=params.PATIENCE,
                                             SPLIT_SIZE=params.SPLIT_SIZE,

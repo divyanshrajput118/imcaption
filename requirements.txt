@@ -12,6 +12,7 @@ seaborn==0.13.2
 
 # ── Experiment Tracking & Pipeline ──────────────────────────────
 mlflow==3.14.0
+dagshub
 dvc==3.67.0
 
 # ── Utilities ───────────────────────────────────────────────────

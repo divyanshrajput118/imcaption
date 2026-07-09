@@ -47,14 +47,13 @@ class ModelTrainerConfig:
     trained_model_path: Path
     train_images_captions_path: Path
     best_model_path: Path
-    
+    LEARNING_RATE: float
     EPOCHS: int
     PATIENCE: int
     SPLIT_SIZE: int
     RANDOM_STATE: int         
     MAX_LENGTH: int
-    BATCH_SIZE: int      
-
+    BATCH_SIZE: int  
 
 @dataclass(frozen=True)
 class ModelEvaluationConfig:

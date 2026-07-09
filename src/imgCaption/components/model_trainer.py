@@ -4,6 +4,7 @@ from imgCaption import logger
 from imgCaption.constants import *
 from imgCaption.utils.common import read_yaml,create_directories,load_pkl_file
 import numpy as np
+import random
 from tqdm import tqdm
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
@@ -88,10 +89,12 @@ class ModelTrainer:
         return d
     
     def data_generator(self, image_caption_map, features_map, tokenized_captions):
+        image_keys = list(image_caption_map.keys())
         while True:
+            random.shuffle(image_keys)
             X1, X2, Y = list(), list(), list()
             cnt = 0
-            for image in image_caption_map:
+            for image in image_keys:
                 for cap_ids in tokenized_captions[image]:
                     for j in range(1, len(cap_ids)):
                         cur_seq = pad_sequences([cap_ids[:j]], maxlen=self.config.MAX_LENGTH, padding='post')[0]
@@ -106,13 +109,6 @@ class ModelTrainer:
                     cnt = 0
             if len(X1) > 0:
                 yield (np.array(X1), np.array(X2)), np.array(Y)
-    
-    def count_token_pairs(self, image_caption_map, tokenized_captions):
-        total = 0
-        for image in image_caption_map:
-            for cap_ids in tokenized_captions[image]:
-                total += max(0, len(cap_ids) - 1)
-        return total
     
     def train(self):
         train_images_caption = load_pkl_file(self.config.train_images_captions_path)
@@ -134,7 +130,7 @@ class ModelTrainer:
         val_generator   = self.data_generator(val_img_cap_map,   val_feat_map,   val_tokenized)
 
         self.main_model.compile(
-            optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3, clipnorm=1.0),
+            optimizer=tf.keras.optimizers.Adam(learning_rate=self.config.LEARNING_RATE, clipnorm=1.0),
             loss=tf.keras.losses.SparseCategoricalCrossentropy(
                 from_logits=False,
                 ignore_class=0,         
@@ -165,13 +161,13 @@ class ModelTrainer:
             ),
         ]
 
-        train_pairs = self.count_token_pairs(train_img_cap_map, train_tokenized)
-        val_pairs   = self.count_token_pairs(val_img_cap_map,   val_tokenized)
-        steps_per_epoch  = max(1, train_pairs // self.config.BATCH_SIZE)
-        validation_steps = max(1, val_pairs   // self.config.BATCH_SIZE)
-        logger.info(f"Total training token-pairs : {train_pairs:,}  →  steps_per_epoch={steps_per_epoch}")
-        logger.info(f"Total validation token-pairs: {val_pairs:,}  →  validation_steps={validation_steps}")
-
+        num_train_images = len(train_img_cap_map)
+        num_val_images   = len(val_img_cap_map)
+        steps_per_epoch  = max(1, num_train_images // self.config.BATCH_SIZE)
+        validation_steps = max(1, num_val_images   // self.config.BATCH_SIZE)
+        logger.info(f"Training images: {num_train_images} → steps_per_epoch={steps_per_epoch}")
+        logger.info(f"Validation images: {num_val_images} → validation_steps={validation_steps}")
+        
         logger.info("Model Training Started")
         self.main_model.fit(
             train_generator,

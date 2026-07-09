@@ -29,3 +29,4 @@ model_trainer:
 model_evaluation:
   root_dir: artifacts/model_evaluation
   scores_path: artifacts/model_evaluation/scores.json
+  mlflow_uri: https://dagshub.com/divyanshrajput118/imcaption.mlflow
