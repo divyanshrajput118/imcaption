@@ -1,7 +1,3 @@
-import os
-from getpass import getpass
-if not os.environ.get("DAGSHUB_CLIENT_TOKEN"):
-    os.environ["DAGSHUB_CLIENT_TOKEN"] = getpass("Enter your DagsHub Client Token: ")
 import dagshub
 from imgCaption.config.configuration import ConfigurationManager
 from imgCaption.components.model_evaluation import ModelEvaluation
