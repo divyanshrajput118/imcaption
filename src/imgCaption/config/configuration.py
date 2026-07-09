@@ -118,6 +118,8 @@ class ConfigurationManager:
                                                     image_feex_path=Path(prepare_base_model.image_feex_path),
                                                     trained_model_path=Path(training.trained_model_path),
                                                     scores_path=Path(eval_cfg.scores_path),
+                                                    all_params=self.params,
+                                                    mlflow_uri=eval_cfg.mlflow_uri,
                                                     MAX_LENGTH=self.params.MAX_LENGTH,
                                                     BEAM_WIDTH=self.params.BEAM_WIDTH,
                                                 )

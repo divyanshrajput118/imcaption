@@ -64,6 +64,8 @@ class ModelEvaluationConfig:
     image_feex_path: Path
     trained_model_path: Path
     scores_path: Path
+    all_params: dict
+    mlflow_uri: str 
 
     MAX_LENGTH: int
     BEAM_WIDTH: int
