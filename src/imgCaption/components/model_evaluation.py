@@ -4,7 +4,9 @@ import json
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
-
+import mlflow
+import mlflow.keras
+from urllib.parse import urlparse
 import tensorflow as tf
 from tensorflow.keras.layers import TextVectorization
 from tensorflow.keras.models import load_model
@@ -212,6 +214,25 @@ class ModelEvaluation:
 
         logger.info("Running BLEU evaluation...")
         results = self.evaluate_bleu(test_features, test_captions)
+        self.log_into_mlflow(results) 
 
         return results
+    
+    def log_into_mlflow(self, results: dict):
+        mlflow.set_registry_uri(self.config.mlflow_uri)
+        tracking_url_type_store = urlparse(mlflow.get_tracking_uri()).scheme
+
+        with mlflow.start_run():
+            mlflow.log_params(dict(self.config.all_params))
+            mlflow.log_metrics(results)   
+
+        
+            if tracking_url_type_store != "file":
+                mlflow.keras.log_model(
+                    self.trained_model, "model",
+                    registered_model_name="ImageCaptionModel"
+                )
+            else:
+                mlflow.keras.log_model(self.trained_model, "model")
+
     

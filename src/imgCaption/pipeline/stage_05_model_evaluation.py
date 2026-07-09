@@ -1,3 +1,8 @@
+import os
+from getpass import getpass
+if not os.environ.get("DAGSHUB_CLIENT_TOKEN"):
+    os.environ["DAGSHUB_CLIENT_TOKEN"] = getpass("Enter your DagsHub Client Token: ")
+import dagshub
 from imgCaption.config.configuration import ConfigurationManager
 from imgCaption.components.model_evaluation import ModelEvaluation
 from imgCaption import logger
@@ -10,11 +15,16 @@ class ModelEvaluationPipeline:
         pass
 
     def main(self):
+        logger.info("Setting up DagsHub and MLflow configuration...")
+        dagshub.init(
+            repo_owner='divyanshrajput118', 
+            repo_name='imcaption', 
+            mlflow=True
+        )
         config = ConfigurationManager()
         model_evaluation_config = config.get_evaluation_config()
         model_evaluation = ModelEvaluation(config=model_evaluation_config)
         results = model_evaluation.evaluate()
-
         logger.info(f"Final evaluation results: {results}")
 
 if __name__ == '__main__':

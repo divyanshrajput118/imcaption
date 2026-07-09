@@ -10,6 +10,9 @@ scipy==1.17.0
 matplotlib==3.11.0
 seaborn==0.13.2
 
+# ── NLP / Evaluation Metrics ────────────────────────────────────
+nltk==3.9.1
+
 # ── Experiment Tracking & Pipeline ──────────────────────────────
 mlflow==3.14.0
 dagshub
