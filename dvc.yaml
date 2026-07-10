@@ -1,0 +1,94 @@
+stages:
+  data_ingestion:
+    cmd: python src/imgCaption/pipeline/stage_01_data_ingestion.py
+    deps:
+      - src/imgCaption/pipeline/stage_01_data_ingestion.py
+      - src/imgCaption/components/data_ingestion.py
+      - config/config.yaml
+    outs:
+      - artifacts/data_ingestion/data.zip
+      - artifacts/data_ingestion/Images
+      - artifacts/data_ingestion/captions.txt
+
+  data_transformation:
+    cmd: python src/imgCaption/pipeline/stage_02_data_transformation.py
+    deps:
+      - src/imgCaption/pipeline/stage_02_data_transformation.py
+      - src/imgCaption/components/data_transformation.py
+      - config/config.yaml
+      - params.yaml
+      - artifacts/data_ingestion/captions.txt
+    params:
+      - SPLIT_SIZE
+      - RANDOM_STATE
+      - VOCAB_SIZE
+      - MAX_LENGTH
+    outs:
+      - artifacts/data_transformation/vectorizer_data.pkl
+      - artifacts/data_transformation/train_images_captions.pkl
+      - artifacts/data_transformation/test_images_captions.pkl
+
+  prepare_base_model:
+    cmd: python src/imgCaption/pipeline/stage_03_prepare_base_model.py
+    deps:
+      - src/imgCaption/pipeline/stage_03_prepare_base_model.py
+      - src/imgCaption/components/prepare_base_model.py
+      - config/config.yaml
+      - params.yaml
+    params:
+      - IMAGE_SIZE
+      - WEIGHTS
+      - INCLUDE_TOP
+      - POOLING
+      - CNN_DIM
+      - EMBEDDING_DIM
+      - LSTM_UNITS
+      - DROPOUT
+      - LEARNING_RATE
+      - VOCAB_SIZE
+      - MAX_LENGTH
+    outs:
+      - artifacts/prepare_base_model/feature_extractor.keras
+      - artifacts/prepare_base_model/main_model.keras
+
+  model_trainer:
+    cmd: python src/imgCaption/pipeline/stage_04_model_trainer.py
+    deps:
+      - src/imgCaption/pipeline/stage_04_model_trainer.py
+      - src/imgCaption/components/model_trainer.py
+      - config/config.yaml
+      - params.yaml
+      - artifacts/prepare_base_model/feature_extractor.keras
+      - artifacts/prepare_base_model/main_model.keras
+      - artifacts/data_ingestion/Images
+      - artifacts/data_transformation/train_images_captions.pkl
+      - artifacts/data_transformation/vectorizer_data.pkl
+    params:
+      - BATCH_SIZE
+      - EPOCHS
+      - PATIENCE
+      - CLIPNORM
+      - LEARNING_RATE
+      - MAX_LENGTH
+    outs:
+      - artifacts/training/model.keras
+      - artifacts/training/best_model.keras
+
+  model_evaluation:
+    cmd: python src/imgCaption/pipeline/stage_05_model_evaluation.py
+    deps:
+      - src/imgCaption/pipeline/stage_05_model_evaluation.py
+      - src/imgCaption/components/model_evaluation.py
+      - config/config.yaml
+      - params.yaml
+      - artifacts/training/best_model.keras
+      - artifacts/prepare_base_model/feature_extractor.keras
+      - artifacts/data_ingestion/Images
+      - artifacts/data_transformation/test_images_captions.pkl
+      - artifacts/data_transformation/vectorizer_data.pkl
+    params:
+      - BEAM_WIDTH
+      - MAX_LENGTH
+    metrics:
+      - artifacts/model_evaluation/scores.json:
+          cache: false

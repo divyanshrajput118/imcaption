@@ -1,0 +1,223 @@
+schema: '2.0'
+stages:
+  data_ingestion:
+    cmd: python src/imgCaption/pipeline/stage_01_data_ingestion.py
+    deps:
+    - path: config/config.yaml
+      hash: md5
+      md5: 38936fa83a8ae3c9c970a8b25bd5a6c7
+      size: 1241
+    - path: src/imgCaption/components/data_ingestion.py
+      hash: md5
+      md5: 4ca85577ed829869a7c78546da9ed675
+      size: 1374
+    - path: src/imgCaption/pipeline/stage_01_data_ingestion.py
+      hash: md5
+      md5: b879cc787ba6923ff2b84a31859b217a
+      size: 893
+    outs:
+    - path: artifacts/data_ingestion/Images
+      hash: md5
+      md5: 1a0649d0d74e7cf7c96d47624f8e8e5d.dir
+      size: 1114733885
+      nfiles: 8091
+    - path: artifacts/data_ingestion/captions.txt
+      hash: md5
+      md5: 984c5c3f4888d9ae1388e2a3051e9e97
+      size: 3319294
+    - path: artifacts/data_ingestion/data.zip
+      hash: md5
+      md5: 62dff157d3d220cb8ca1fda69d2c730c
+      size: 1112971163
+  data_transformation:
+    cmd: python src/imgCaption/pipeline/stage_02_data_transformation.py
+    deps:
+    - path: artifacts/data_ingestion/captions.txt
+      hash: md5
+      md5: 984c5c3f4888d9ae1388e2a3051e9e97
+      size: 3319294
+    - path: config/config.yaml
+      hash: md5
+      md5: 38936fa83a8ae3c9c970a8b25bd5a6c7
+      size: 1241
+    - path: params.yaml
+      hash: md5
+      md5: a2c0c2c120308ac90dcf68015f392b95
+      size: 313
+    - path: src/imgCaption/components/data_transformation.py
+      hash: md5
+      md5: d1c408662fb5acade0b7e8877a7bbbc0
+      size: 2864
+    - path: src/imgCaption/pipeline/stage_02_data_transformation.py
+      hash: md5
+      md5: 9fe505a2a872aa0f3841d841fd2f11c8
+      size: 1315
+    params:
+      params.yaml:
+        MAX_LENGTH: 37
+        RANDOM_STATE: 42
+        SPLIT_SIZE: 0.2
+        VOCAB_SIZE: 8782
+    outs:
+    - path: artifacts/data_transformation/test_images_captions.pkl
+      hash: md5
+      md5: 16be584e3d81e098f85191a383c237b0
+      size: 638166
+    - path: artifacts/data_transformation/train_images_captions.pkl
+      hash: md5
+      md5: 502ab0e60a5cdd5505a32537a4b13066
+      size: 2536297
+    - path: artifacts/data_transformation/vectorizer_data.pkl
+      hash: md5
+      md5: 8016a16740f89536f7b9459e48efe24c
+      size: 585333
+  prepare_base_model:
+    cmd: python src/imgCaption/pipeline/stage_03_prepare_base_model.py
+    deps:
+    - path: config/config.yaml
+      hash: md5
+      md5: 38936fa83a8ae3c9c970a8b25bd5a6c7
+      size: 1241
+    - path: params.yaml
+      hash: md5
+      md5: a2c0c2c120308ac90dcf68015f392b95
+      size: 313
+    - path: src/imgCaption/components/prepare_base_model.py
+      hash: md5
+      md5: 88a97948acfdd2e0b26d5d439db6f33b
+      size: 3549
+    - path: src/imgCaption/pipeline/stage_03_prepare_base_model.py
+      hash: md5
+      md5: dcf78904a5a951cdff8faa5f80f5792b
+      size: 983
+    params:
+      params.yaml:
+        CNN_DIM: 2048
+        DROPOUT: 0.5
+        EMBEDDING_DIM: 256
+        IMAGE_SIZE:
+        - 224
+        - 224
+        - 3
+        INCLUDE_TOP: false
+        LEARNING_RATE: 0.001
+        LSTM_UNITS: 512
+        MAX_LENGTH: 37
+        POOLING: avg
+        VOCAB_SIZE: 8782
+        WEIGHTS: imagenet
+    outs:
+    - path: artifacts/prepare_base_model/feature_extractor.keras
+      hash: md5
+      md5: 9c0a75dd6d33ce346e20d3fb7d3d6474
+      size: 94999076
+    - path: artifacts/prepare_base_model/main_model.keras
+      hash: md5
+      md5: a49397acbedbbb9de9093ae40ab813e6
+      size: 35655389
+  model_trainer:
+    cmd: python src/imgCaption/pipeline/stage_04_model_trainer.py
+    deps:
+    - path: artifacts/data_ingestion/Images
+      hash: md5
+      md5: 1a0649d0d74e7cf7c96d47624f8e8e5d.dir
+      size: 1114733885
+      nfiles: 8091
+    - path: artifacts/data_transformation/train_images_captions.pkl
+      hash: md5
+      md5: 502ab0e60a5cdd5505a32537a4b13066
+      size: 2536297
+    - path: artifacts/data_transformation/vectorizer_data.pkl
+      hash: md5
+      md5: 8016a16740f89536f7b9459e48efe24c
+      size: 585333
+    - path: artifacts/prepare_base_model/feature_extractor.keras
+      hash: md5
+      md5: 9c0a75dd6d33ce346e20d3fb7d3d6474
+      size: 94999076
+    - path: artifacts/prepare_base_model/main_model.keras
+      hash: md5
+      md5: a49397acbedbbb9de9093ae40ab813e6
+      size: 35655389
+    - path: config/config.yaml
+      hash: md5
+      md5: 38936fa83a8ae3c9c970a8b25bd5a6c7
+      size: 1241
+    - path: params.yaml
+      hash: md5
+      md5: a2c0c2c120308ac90dcf68015f392b95
+      size: 313
+    - path: src/imgCaption/components/model_trainer.py
+      hash: md5
+      md5: 8a65357c4e54c979e0c498d5ccc5a1cb
+      size: 8079
+    - path: src/imgCaption/pipeline/stage_04_model_trainer.py
+      hash: md5
+      md5: 885cff4cd7052d49ab1d4e0244883255
+      size: 851
+    params:
+      params.yaml:
+        BATCH_SIZE: 16
+        CLIPNORM: 1.0
+        EPOCHS: 50
+        LEARNING_RATE: 0.001
+        MAX_LENGTH: 37
+        PATIENCE: 5
+    outs:
+    - path: artifacts/training/best_model.keras
+      hash: md5
+      md5: cefee98e5a814e38308d3faa5305ba34
+      size: 106873119
+    - path: artifacts/training/model.keras
+      hash: md5
+      md5: 1baae1bc95db0ebf28ddfde1bfaf543d
+      size: 106873119
+  model_evaluation:
+    cmd: python src/imgCaption/pipeline/stage_05_model_evaluation.py
+    deps:
+    - path: artifacts/data_ingestion/Images
+      hash: md5
+      md5: 1a0649d0d74e7cf7c96d47624f8e8e5d.dir
+      size: 1114733885
+      nfiles: 8091
+    - path: artifacts/data_transformation/test_images_captions.pkl
+      hash: md5
+      md5: 16be584e3d81e098f85191a383c237b0
+      size: 638166
+    - path: artifacts/data_transformation/vectorizer_data.pkl
+      hash: md5
+      md5: 8016a16740f89536f7b9459e48efe24c
+      size: 585333
+    - path: artifacts/prepare_base_model/feature_extractor.keras
+      hash: md5
+      md5: 9c0a75dd6d33ce346e20d3fb7d3d6474
+      size: 94999076
+    - path: artifacts/training/best_model.keras
+      hash: md5
+      md5: cefee98e5a814e38308d3faa5305ba34
+      size: 106873119
+    - path: config/config.yaml
+      hash: md5
+      md5: 38936fa83a8ae3c9c970a8b25bd5a6c7
+      size: 1241
+    - path: params.yaml
+      hash: md5
+      md5: a2c0c2c120308ac90dcf68015f392b95
+      size: 313
+    - path: src/imgCaption/components/model_evaluation.py
+      hash: md5
+      md5: b6a3072078ba24bf2e17791a71c752fe
+      size: 9099
+    - path: src/imgCaption/pipeline/stage_05_model_evaluation.py
+      hash: md5
+      md5: 62472c52a0541b8eb5956b5e35663457
+      size: 1159
+    params:
+      params.yaml:
+        BEAM_WIDTH: 3
+        MAX_LENGTH: 37
+    outs:
+    - path: artifacts/model_evaluation/scores.json
+      hash: md5
+      md5: 67acedbff8a026ad9d74da5957ba41a2
+      size: 94
