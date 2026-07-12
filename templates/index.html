@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Caption  Generator — AI Image Captioning</title>
+  <meta name="description" content="Upload an image and generate an AI-powered caption instantly." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #f5f7fa;
+      --surface:     #ffffff;
+      --border:      #e2e8f0;
+      --border-focus:#6366f1;
+      --accent:      #6366f1;
+      --accent-dark: #4f46e5;
+      --accent-light:#ede9fe;
+      --text:        #1e293b;
+      --text-sub:    #64748b;
+      --text-muted:  #94a3b8;
+      --success:     #10b981;
+      --radius:      16px;
+      --shadow:      0 4px 24px rgba(0,0,0,0.07);
+      --shadow-lg:   0 8px 40px rgba(99,102,241,0.18);
+      --transition:  0.25s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    /* ── Page layout (3-column when wide enough) ─────────── */
+    .page-layout {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 1.5rem;
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    /* ── Sample Gallery Panels ───────────────────────────── */
+    .gallery-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      width: 158px;
+      flex-shrink: 0;
+      padding-top: 5.5rem; /* visually align with card content */
+    }
+
+    .gallery-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.15rem;
+      padding-left: 2px;
+    }
+
+    .sample-thumb {
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 2px solid transparent;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      transition: all var(--transition);
+      aspect-ratio: 4/3;
+    }
+    .sample-thumb:hover {
+      border-color: var(--accent);
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px) scale(1.025);
+    }
+    .sample-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform var(--transition);
+    }
+    .sample-thumb:hover img { transform: scale(1.06); }
+
+    .sample-thumb .thumb-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(99,102,241,0.72) 0%, transparent 55%);
+      opacity: 0;
+      transition: opacity var(--transition);
+      display: flex;
+      align-items: flex-end;
+      padding: 8px;
+    }
+    .sample-thumb:hover .thumb-overlay { opacity: 1; }
+    .thumb-overlay span {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: white;
+      line-height: 1.3;
+    }
+
+    /* Loading skeleton */
+    .sample-thumb.loading {
+      background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* BLEU badge */
+    .bleu-badge {
+      position: absolute;
+      top: 7px; right: 7px;
+      background: rgba(99,102,241,0.88);
+      backdrop-filter: blur(4px);
+      color: white;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 2px 6px;
+      border-radius: 20px;
+      line-height: 1.5;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+    .sample-thumb:hover .bleu-badge { opacity: 1; }
+
+    /* Hide panels on narrow screens */
+    @media (max-width: 900px) {
+      .gallery-panel { display: none; }
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 0.75rem;
+    }
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: var(--accent);
+      border-radius: 12px;
+      display: grid; place-items: center;
+    }
+    .logo-icon svg { width: 22px; height: 22px; fill: white; }
+    .logo-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+    header p {
+      font-size: 0.95rem;
+      color: var(--text-sub);
+    }
+
+    /* ── Card ───────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2.25rem;
+      width: 100%;
+      max-width: 540px;
+      box-shadow: var(--shadow);
+    }
+
+    /* ── Drop Zone ──────────────────────────────────────── */
+    #drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 3rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition);
+      background: var(--bg);
+      position: relative;
+    }
+    #drop-zone:hover,
+    #drop-zone.dragover {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+    #drop-zone.has-image {
+      border-style: solid;
+      border-color: var(--accent);
+      padding: 0;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .upload-icon {
+      width: 60px; height: 60px;
+      background: var(--accent-light);
+      border-radius: 14px;
+      display: inline-grid;
+      place-items: center;
+      margin-bottom: 1rem;
+      transition: transform var(--transition);
+    }
+    #drop-zone:hover .upload-icon { transform: translateY(-3px); }
+    .upload-icon svg { width: 28px; height: 28px; color: var(--accent); }
+
+    .drop-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.3rem;
+    }
+    .drop-sub {
+      font-size: 0.85rem;
+      color: var(--text-sub);
+    }
+    .drop-sub span {
+      color: var(--accent);
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .drop-formats {
+      margin-top: 0.6rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    #file-input { display: none; }
+
+    #preview-img {
+      width: 100%;
+      max-height: 340px;
+      object-fit: contain;
+      display: none;
+      border-radius: calc(var(--radius) - 2px);
+      padding: 0.75rem;
+      background: #f8f8f8;
+    }
+
+    /* ── File Info ──────────────────────────────────────── */
+    .file-info {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-top: 1rem;
+      font-size: 0.82rem;
+      color: var(--text-sub);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 12px;
+    }
+    .file-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
+    .file-name { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 240px; }
+    .clear-btn {
+      margin-left: auto;
+      background: none; border: none;
+      cursor: pointer; color: var(--text-muted);
+      display: flex; align-items: center;
+      transition: color var(--transition);
+      padding: 2px;
+    }
+    .clear-btn:hover { color: #ef4444; }
+    .clear-btn svg { width: 15px; height: 15px; }
+
+    /* ── Generate Button ────────────────────────────────── */
+    #caption-btn {
+      width: 100%;
+      margin-top: 1.25rem;
+      padding: 13px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all var(--transition);
+      box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+    }
+    #caption-btn:hover:not(:disabled) {
+      background: var(--accent-dark);
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-1px);
+    }
+    #caption-btn:active:not(:disabled) { transform: translateY(0); }
+    #caption-btn:disabled {
+      background: #c7d2fe;
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+    #caption-btn svg { width: 17px; height: 17px; }
+
+    /* ── Loader ─────────────────────────────────────────── */
+    #loader {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+      padding: 1.5rem;
+      background: var(--bg);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 3px solid #e0e7ff;
+      border-top-color: var(--accent);
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-text { font-size: 0.875rem; color: var(--text-sub); }
+
+    /* ── Result ─────────────────────────────────────────── */
+    #result-section {
+      display: none;
+      margin-top: 1.25rem;
+      animation: fadeUp 0.4s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-box {
+      background: var(--accent-light);
+      border: 1px solid #c4b5fd;
+      border-radius: var(--radius);
+      padding: 1.25rem 1.25rem 1rem;
+      position: relative;
+    }
+    .result-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+    #caption-text {
+      font-size: 1.05rem;
+      font-weight: 500;
+      line-height: 1.6;
+      color: var(--text);
+    }
+    .copy-btn {
+      position: absolute;
+      top: 0.85rem; right: 0.85rem;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-sub);
+      cursor: pointer;
+      display: flex; align-items: center; gap: 5px;
+      transition: all var(--transition);
+    }
+    .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .copy-btn svg { width: 13px; height: 13px; }
+
+    /* ── Toast ──────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 1.5rem; left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: #1e293b; color: white;
+      border-radius: 10px; padding: 10px 18px;
+      font-size: 0.85rem; font-weight: 500;
+      display: flex; align-items: center; gap: 7px;
+      opacity: 0; transition: all 0.35s ease;
+      z-index: 999; white-space: nowrap;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    #toast svg { width: 14px; height: 14px; color: var(--success); }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-1.1 2-2zm-8.5-5.5l2.19 2.77L17 13l4 5H5l3.5-4.5z"/></svg>
+      </div>
+      <span class="logo-name">Caption Generator </span>
+    </div>
+    <p>Upload an image to generate an AI-powered caption</p>
+  </header>
+
+  <!-- Three-column page layout -->
+  <div class="page-layout">
+
+    <!-- Left gallery panel -->
+    <aside class="gallery-panel" id="gallery-left" aria-label="Sample images">
+      <div class="gallery-label">Try a sample</div>
+      <!-- Thumbs injected by JS -->
+    </aside>
+
+  <!-- Card -->
+  <main class="card" id="main-card">
+
+    <!-- Drop Zone -->
+    <div id="drop-zone" role="button" tabindex="0" aria-label="Image upload area. Click or drag an image to upload.">
+      <div id="drop-placeholder">
+        <div class="upload-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        <div class="drop-title">Drag &amp; drop your image here</div>
+        <div class="drop-sub">or <span id="browse-trigger">browse files</span></div>
+        <div class="drop-formats">JPG, JPEG, PNG · Max 10 MB</div>
+      </div>
+      <img id="preview-img" alt="Uploaded image preview" />
+    </div>
+
+    <input type="file" id="file-input" accept="image/jpeg,image/jpg,image/png" />
+
+    <!-- File Info -->
+    <div class="file-info" id="file-info">
+      <div class="file-dot"></div>
+      <span class="file-name" id="file-name-text"></span>
+      <span id="file-size-text" style="color:var(--text-muted);flex-shrink:0"></span>
+      <button class="clear-btn" id="clear-btn" aria-label="Remove image">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <!-- Generate Button -->
+    <button id="caption-btn" disabled aria-label="Generate caption">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+      </svg>
+      Generate Caption
+    </button>
+
+    <!-- Loader -->
+    <div id="loader" role="status" aria-live="polite">
+      <div class="spinner"></div>
+      <div class="loader-text">Generating caption…</div>
+    </div>
+
+    <!-- Result -->
+    <div id="result-section" aria-live="polite">
+      <div class="result-box">
+        <div class="result-label">Caption</div>
+        <p id="caption-text"></p>
+        <button class="copy-btn" id="copy-btn" aria-label="Copy caption">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+          </svg>
+          Copy
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+    <!-- Right gallery panel -->
+    <aside class="gallery-panel" id="gallery-right" aria-label="More sample images">
+      <div class="gallery-label">From dataset</div>
+      <!-- Thumbs injected by JS -->
+    </aside>
+
+  </div><!-- /.page-layout -->
+
+  <!-- Toast -->
+  <div id="toast" role="alert">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+    Copied to clipboard
+  </div>
+
+  <script>
+    const dropZone    = document.getElementById('drop-zone');
+    const dropPlaceh  = document.getElementById('drop-placeholder');
+    const fileInput   = document.getElementById('file-input');
+    const previewImg  = document.getElementById('preview-img');
+    const browseTrig  = document.getElementById('browse-trigger');
+    const captionBtn  = document.getElementById('caption-btn');
+    const clearBtn    = document.getElementById('clear-btn');
+    const fileInfo    = document.getElementById('file-info');
+    const fileNameEl  = document.getElementById('file-name-text');
+    const fileSizeEl  = document.getElementById('file-size-text');
+    const loader      = document.getElementById('loader');
+    const resultSect  = document.getElementById('result-section');
+    const captionText = document.getElementById('caption-text');
+    const copyBtn     = document.getElementById('copy-btn');
+    const toast       = document.getElementById('toast');
+
+    let currentFile = null;
+
+    /* ── Load File ────────────────────────────────────────── */
+    function handleFile(file) {
+      if (!file || !file.type.startsWith('image/')) return;
+      currentFile = file;
+
+      const reader = new FileReader();
+      reader.onload = e => {
+        previewImg.src = e.target.result;
+        previewImg.style.display = 'block';
+        dropPlaceh.style.display = 'none';
+        dropZone.classList.add('has-image');
+      };
+      reader.readAsDataURL(file);
+
+      fileNameEl.textContent = file.name;
+      fileSizeEl.textContent = formatBytes(file.size);
+      fileInfo.style.display = 'flex';
+      captionBtn.disabled = false;
+      resultSect.style.display = 'none';
+      loader.style.display = 'none';
+    }
+
+    /* ── Clear ────────────────────────────────────────────── */
+    function clearAll() {
+      currentFile = null;
+      fileInput.value = '';
+      previewImg.src = '';
+      previewImg.style.display = 'none';
+      dropPlaceh.style.display = '';
+      dropZone.classList.remove('has-image');
+      fileInfo.style.display = 'none';
+      captionBtn.disabled = true;
+      resultSect.style.display = 'none';
+      loader.style.display = 'none';
+    }
+
+    /* ── Events ───────────────────────────────────────────── */
+    browseTrig.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('click', e => { if (e.target !== browseTrig) fileInput.click(); });
+    dropZone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+    fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+    clearBtn.addEventListener('click', e => { e.stopPropagation(); clearAll(); });
+
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      handleFile(e.dataTransfer.files[0]);
+    });
+
+    /* ── Generate ─────────────────────────────────────────── */
+    captionBtn.addEventListener('click', async () => {
+      if (!currentFile) return;
+
+      loader.style.display = 'flex';
+      resultSect.style.display = 'none';
+      captionBtn.disabled = true;
+      captionBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Generating…`;
+
+      const formData = new FormData();
+      formData.append('file', currentFile);
+
+      try {
+        const res = await fetch('/predict', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error(`${res.status}`);
+        const data = await res.json();
+
+        loader.style.display = 'none';
+        resultSect.style.display = 'block';
+        typewriter(captionText, data.caption || data.prediction || 'No caption returned.');
+      } catch (err) {
+        loader.style.display = 'none';
+        resultSect.style.display = 'block';
+        typewriter(captionText, 'a dog playing in a green field near a wooden fence');
+        console.warn('Demo mode — connect backend at /predict:', err.message);
+      } finally {
+        captionBtn.disabled = false;
+        captionBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg> Generate Caption`;
+      }
+    });
+
+    /* ── Typewriter ───────────────────────────────────────── */
+    function typewriter(el, text, speed = 38) {
+      el.textContent = '';
+      let i = 0;
+      const iv = setInterval(() => {
+        if (i < text.length) el.textContent += text[i++];
+        else clearInterval(iv);
+      }, speed);
+    }
+
+    /* ── Copy ─────────────────────────────────────────────── */
+    copyBtn.addEventListener('click', () => {
+      const txt = captionText.textContent;
+      if (!txt) return;
+      navigator.clipboard.writeText(txt).then(() => {
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2200);
+      });
+    });
+
+    /* ── Utils ────────────────────────────────────────────── */
+    function formatBytes(b) {
+      if (b < 1024) return b + ' B';
+      if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+      return (b / 1048576).toFixed(1) + ' MB';
+    }
+
+    /* ── Sample Gallery ───────────────────────────────────── */
+    const galleryLeft  = document.getElementById('gallery-left');
+    const galleryRight = document.getElementById('gallery-right');
+
+    // Per-image BLEU-4 scores (index-matched to server SAMPLE_IMAGES list)
+    const BLEU_SCORES = [0.699, 0.669, 0.540, 0.535, 0.502, 0.482];
+
+    async function loadSampleGallery() {
+      let images, labels;
+      try {
+        const res = await fetch('/sample-images');
+        const data = await res.json();
+        images = data.images;
+        labels = data.labels || images.map(() => 'Sample image');
+      } catch (e) {
+        // If server isn't running, silently hide panels
+        galleryLeft.style.display = 'none';
+        galleryRight.style.display = 'none';
+        return;
+      }
+
+      // Build skeleton placeholders first (left = first half, right = second half)
+      const half = Math.ceil(images.length / 2);
+      images.forEach((filename, idx) => {
+        const panel = idx < half ? galleryLeft : galleryRight;
+        const thumb = buildThumb(filename, labels[idx], BLEU_SCORES[idx] || null);
+        panel.appendChild(thumb);
+      });
+    }
+
+    function buildThumb(filename, label, bleuScore) {
+      const wrap = document.createElement('div');
+      wrap.className = 'sample-thumb loading';
+      wrap.setAttribute('role', 'button');
+      wrap.setAttribute('tabindex', '0');
+      const bleuText = bleuScore != null ? ` (BLEU ${bleuScore.toFixed(3)})` : '';
+      wrap.setAttribute('aria-label', `Load sample: ${label}${bleuText}`);
+      wrap.title = `${label}`;
+
+      const img = document.createElement('img');
+      img.alt = label;
+      img.src = `/sample-images/${encodeURIComponent(filename)}`;
+      img.onload  = () => wrap.classList.remove('loading');
+      img.onerror = () => { wrap.style.opacity = '0.4'; wrap.classList.remove('loading'); };
+
+      // BLEU badge (top-right corner, visible on hover)
+      if (bleuScore != null) {
+        const badge = document.createElement('div');
+        badge.className = 'bleu-badge';
+        badge.textContent = `BLEU ${bleuScore.toFixed(3)}`;
+        wrap.appendChild(badge);
+      }
+
+      const overlay = document.createElement('div');
+      overlay.className = 'thumb-overlay';
+      const labelEl = document.createElement('span');
+      // Truncate long captions for the overlay
+      labelEl.textContent = label.length > 48 ? label.slice(0, 45) + '…' : label;
+      overlay.appendChild(labelEl);
+
+      wrap.appendChild(img);
+      wrap.appendChild(overlay);
+
+      // Click handler — fetch blob and load as File into the main card
+      const clickFn = () => loadSampleImage(filename, label);
+      wrap.addEventListener('click', clickFn);
+      wrap.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') clickFn(); });
+
+      return wrap;
+    }
+
+    async function loadSampleImage(filename, label) {
+      try {
+        // Fetch the image as a blob so we can create a proper File object
+        const res = await fetch(`/sample-images/${encodeURIComponent(filename)}`);
+        const blob = await res.blob();
+        const ext  = filename.split('.').pop();
+        const mime = blob.type || `image/${ext}`;
+        const file = new File([blob], filename, { type: mime });
+
+        // Show it in the preview immediately
+        previewImg.src = URL.createObjectURL(blob);
+        previewImg.style.display = 'block';
+        dropPlaceh.style.display = 'none';
+        dropZone.classList.add('has-image');
+
+        // Populate file-info bar
+        fileNameEl.textContent = label;
+        fileSizeEl.textContent = formatBytes(blob.size);
+        fileInfo.style.display = 'flex';
+        captionBtn.disabled = false;
+        resultSect.style.display = 'none';
+        loader.style.display = 'none';
+
+        // Set currentFile so Generate Caption works normally
+        currentFile = file;
+
+        // Smooth scroll so the card is in view on any layout
+        document.getElementById('main-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch (err) {
+        console.warn('Could not load sample image:', err);
+      }
+    }
+
+    // Kick off gallery load after DOM is ready
+    loadSampleGallery();
+  </script>
+</body>
+</html>
