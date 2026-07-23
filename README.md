@@ -17,16 +17,16 @@ Below is the workflow and model pipeline architecture for this project:
 * **Modular Pipeline Design:** Organized into clear execution steps (data ingestion, validation, transformation, model training, and evaluation).
 * **DVC Integration:** Tracks data and pipeline stages (`dvc.yaml`, `dvc.lock`) for reproducible machine learning workflows.
 * **Web Interface:** Interactive web application (`app.py` / `templates/`) allowing users to upload images and generate captions in real-time.
-* **Evaluation & Tracking:** Evaluates model performance and saves metric artifacts (`scores.json`, `eval_checkpoint.json`).
+* **Evaluation:** Evaluates model performance and saves metric artifacts (`scores.json`).
 
 ---
 
 ## Technical Stack
 
 * **Language:** Python
-* **ML/DL Frameworks:** PyTorch / TensorFlow
+* **ML/DL Frameworks:** TensorFlow
 * **Pipeline & Versioning:** DVC
-* **Web Application:** Flask / FastAPI
+* **Web Application:** Flask
 * **Deployment & Setup:** `setup.py`, `requirements.txt`
 
 ---
