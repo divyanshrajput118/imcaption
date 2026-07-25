@@ -35,6 +35,6 @@ Below is the workflow and model pipeline architecture for this project:
 
 Below is the architecture/summary of the image captioning model used in this project:
 
-![Image Caption Model](imcaption.png)
+![Image Caption Model](imgcaption.png)
 
 ---
