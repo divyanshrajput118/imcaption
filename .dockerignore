@@ -1,0 +1,41 @@
+# Git & version control
+.git
+.gitignore
+.github
+.dvc
+.dvcignore
+dvc.lock
+
+# IDE & Editor files
+.vscode
+.idea
+*.swp
+*.swo
+
+# Python caches and build artifacts
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.egg-info
+build/
+dist/
+.pytest_cache
+.coverage
+
+# Logs & Notebooks
+logs/
+research/
+*.ipynb
+
+# Heavy training data and temporary downloads
+# Inference only needs:
+# - artifacts/prepare_base_model/feature_extractor.keras
+# - artifacts/training/model.keras
+# - artifacts/data_transformation/vectorizer_data.pkl
+artifacts/data_ingestion/
+artifacts/data_transformation/train_images_captions.pkl
+artifacts/data_transformation/test_images_captions.pkl
+artifacts/training/best_model.keras
+*.zip
+*.part

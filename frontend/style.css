@@ -1,0 +1,21 @@
+.main{
+    background-color: #212121;
+    color: whitesmoke;
+    text-align: center;
+}
+
+#image-preview{
+    display: flex; 
+    justify-content: center;
+    height: 20%;
+    width: 20%;
+}
+
+#caption-container{
+    color: #212121;
+}
+
+.caption{
+    color: blueviolet;
+    background-color: beige;
+}

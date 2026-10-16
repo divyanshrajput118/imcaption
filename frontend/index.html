@@ -1,0 +1,39 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Captioning NLP</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="main">
+    <h1>Image Caption Generator</h1>
+
+    <form id="upload-form">
+        <label for="image-picker">Choose an image:</label>
+        <input
+            type="file"
+            id="image-picker"
+            name="image"
+            accept="image/jpeg,image/png"
+            required
+        >
+        <br><br>
+        <button type="submit" id="submit-btn">
+            Generate Caption
+        </button>
+    </form>
+    <div class="preview-box">
+        <img id="image-preview">
+    </div>
+
+    <p id="event-status"></p>
+
+    <div class="caption">
+        Caption: <span id="caption-container"></span>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
