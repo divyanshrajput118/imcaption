@@ -27,6 +27,8 @@ dist/
 logs/
 research/
 *.ipynb
+template.py
+requirements_colab.txt
 
 # Heavy training data and temporary downloads
 # Inference only needs:
